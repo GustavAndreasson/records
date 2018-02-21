@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="sv">
+    <?php require("head.phtml"); ?>
+    <body>
+        <?php if($main->collection): ?>
+        <?php require("header.phtml"); ?>
+        <?php require("main.phtml"); ?>
+        <div id="status">Väntar på data...</div>
+        <div id="loader" style="display: none">Laddar in skivor...</div>
+        <div id="collection"></div>
+        <div id="record-popup" style="display:none"></div>
+        <?php else: ?>
+        <?php require("set_username.phtml"); ?>
+        <?php endif; ?>
+    </body>
+</html>
