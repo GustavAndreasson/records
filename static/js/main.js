@@ -297,6 +297,10 @@ function Collection(div) {
 	    $(".record").sort(function(a, b) {
 		vala = self.collection[$(a).attr("id").substr(7)][order.attr];//$(a).children("." + order.attr).text();
 		valb = self.collection[$(b).attr("id").substr(7)][order.attr];//$(b).children("." + order.attr).text();
+                if (order.attr == "artists") {
+                    vala = getArtists(vala);
+                    valb = getArtists(valb);
+                }
 		if (vala < valb) return -order.dir;
 		if (vala > valb) return order.dir;
 		return ($(a).index() < $(b).index() ? -1 : 1);
