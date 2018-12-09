@@ -56,6 +56,19 @@ class Discogs {
         return self::readUri($uri);
     }
 
+    public static function getArtist($artist) {
+        $uri = self::DISCOGS_BASE_URL . "/artists/" . $artist;
+        $uri .= "&key=" . self::$key . "&secret=" . self::$secret;
+        return self::readUri($uri);
+    }
+
+    public static function getArtistReleases($artist, $page, $pageSize) {
+        $uri = self::DISCOGS_BASE_URL . "/artists/" . $artist . "/releases";
+        $uri .= "?page=" . $page . "&per_page=" . $pageSize;
+        $uri .= "&key=" . self::$key . "&secret=" . self::$secret;
+        return self::readUri($uri);
+    }
+
     public static function readUri($uri) {
         try {
             $stmt = self::$conn->prepare("select count(*) as queue, min(timestamp) as firstCall from discogs_access where timestamp > ?");
@@ -73,6 +86,7 @@ class Discogs {
             $stmt->execute(array(time()));
         } catch (PDOException $e) {
             Util::log("Something went wrong when checking discogs access log: " . $e->getMessage(), true);
+            die();
         }
         
         $ch = curl_init($uri);
