@@ -11,7 +11,7 @@ class Record {
     public $year;
     public $added_date;
     public $tracks;
-    
+
     public function __construct($conn, $record) {
         $this->conn = $conn;
         if (is_object($record)) { //record is an record object from discogs
@@ -20,7 +20,7 @@ class Record {
             $this->name = $record->basic_information->title;
             foreach ($record->basic_information->artists as $artist) {
                 $this->artists[$artist->id] = [
-                    "artist" => new Artist($this->conn, $artist,
+                    "artist" => new Artist($this->conn, $artist),
                     "delimiter" => $artist->join];
             }
             $this->cover = $record->basic_information->cover_image;

@@ -21,6 +21,7 @@ defined("DB_NAME") or define("DB_NAME", "records");
 
 require_once("Util.php");
 require_once("Discogs.php");
+require_once("Artist.php");
 require_once("Track.php");
 require_once("Record.php");
 require_once("Collection.php");
