@@ -20,11 +20,15 @@ class Track {
                 $this->id = $this->conn->lastInsertId();
                 if (isset($data->artists)) {
                     foreach ($data->artists as $artist) {
-                        $this->artists[] = ["name" => $artist->name,
-                                            "delimiter" => $artist->join];
-                        $stmt = $this->conn->prepare("insert into artists (id, name) values (?, ?) on duplicate key update id=id");
-                        $stmt->execute(array($artist->id, preg_replace("/\s\([0-9]+\)/", "", $artist->name)));
-                        $stmt = $this->conn->prepare("insert into track_artists (track_id, artist_id, delimiter) values (?, ?, ?)");
+                        $this->artists[$artist->id] = [
+                            "artist" => new Artist($this->conn, $artist),
+                            "delimiter" => $artist->join
+                        ];
+                        //$sql = "insert into artists (id, name) values (?, ?) on duplicate key update id=id";
+                        //$stmt = $this->conn->prepare($sql);
+                        //$stmt->execute(array($artist->id, preg_replace("/\s\([0-9]+\)/", "", $artist->name)));
+                        $sql = "insert into track_artists (track_id, artist_id, delimiter) values (?, ?, ?)";
+                        $stmt = $this->conn->prepare($sql);
                         $stmt->execute(array($this->id, $artist->id, $artist->join));
                     }
                 }
@@ -35,14 +39,15 @@ class Track {
             $this->id = $data["id"];
             $this->position = $data["position"];
             $this->name = $data["name"];
-            $sql = "select a.name, ta.delimiter from track_artists ta ";
+            $sql = "select a.id, a.name, ta.delimiter from track_artists ta ";
             $sql .= "inner join artists a on ta.artist_id = a.id ";
             $sql .= "where ta.track_id = ?";
             $stmt = $this->conn->prepare($sql);
             $stmt->execute(array($this->id));
             while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-                $this->artists[] = ["name" => $row["name"],
-                                    "delimiter" => $row["delimiter"]];
+                $this->artists[$row["id"]] = [
+                    "artist" => new Artist($this->conn, ["id" => $row["id"], "name" => $row["name"]]),
+                    "delimiter" => $row["delimiter"]];
             }
         }
     }

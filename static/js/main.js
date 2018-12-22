@@ -160,11 +160,11 @@ function Collection(div) {
             if (filter.attr == "all") {
                 var test = false;
                 $.each(record.artists, function(i, artist) {
-                    test |= comparors.sub(artist.name, filter.val);
+                    test |= comparors.sub(artist.artist.name, filter.val);
                 });
                 $.each(record.tracks, function(i, track) {
                     $.each(track.artists, function(j, artist) {
-                        test |= comparors.sub(artist.name, filter.val);
+                        test |= comparors.sub(artist.artist.name, filter.val);
                     });
                 });
                 test |= comparors.sub(record.name, filter.val);
@@ -172,11 +172,11 @@ function Collection(div) {
             } else if (filter.attr == "artist") {
                 var test = false;
                 $.each(record.artists, function(i, artist) {
-                    test |= comparors[filter.cmp](artist.name, filter.val);
+                    test |= comparors[filter.cmp](artist.artist.name, filter.val);
                 });
                 $.each(record.tracks, function(i, track) {
                     $.each(track.artists, function(j, artist) {
-                        test |= comparors[filter.cmp](artist.name, filter.val);
+                        test |= comparors[filter.cmp](artist.artist.name, filter.val);
                     });
                 });
                 show &= test;
@@ -191,7 +191,7 @@ function Collection(div) {
         var artists_str = "";
         $.each(artists, function(i, artist) {
             if (html) artists_str += "<span class='artist'>";
-            artists_str += artist.name;
+            artists_str += artist.artist.name;
             if (html) artists_str += "</span>";
             if (artists[i+1]) {
                 artists_str += " " + artist.delimiter + " ";

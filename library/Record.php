@@ -19,8 +19,9 @@ class Record {
             $this->id = $record->id;
             $this->name = $record->basic_information->title;
             foreach ($record->basic_information->artists as $artist) {
-                $this->artists[] = ["name" => preg_replace("/\s\([0-9]+\)/", "", $artist->name),
-                                    "delimiter" => $artist->join];
+                $this->artists[$artist->id] = [
+                    "artist" => new Artist($this->conn, $artist,
+                    "delimiter" => $artist->join];
             }
             $this->cover = $record->basic_information->cover_image;
             $this->thumbnail = $record->basic_information->thumb;
@@ -55,11 +56,13 @@ class Record {
                         $this->format,
                         $this->year
                     ));
-                    foreach ($record->basic_information->artists as $artist) {
-                        $stmt = $conn->prepare("insert into artists (id, name) values (?, ?) on duplicate key update id=id");
-                        $stmt->execute(array($artist->id, preg_replace("/\s\([0-9]+\)/", "", $artist->name)));
-                        $stmt = $conn->prepare("insert into record_artists (record_id, artist_id, delimiter) values (?, ?, ?)");
-                        $stmt->execute(array($this->id, $artist->id, $artist->join));
+                    foreach ($this->artists as $artist) {
+                        //$sql = "insert into artists (id, name) values (?, ?) on duplicate key update id=id";
+                        //$stmt = $conn->prepare($sql);
+                        //$stmt->execute(array($artist->id, preg_replace("/\s\([0-9]+\)/", "", $artist->name)));
+                        $sql = "insert into record_artists (record_id, artist_id, delimiter) values (?, ?, ?)";
+                        $stmt = $conn->prepare($sql);
+                        $stmt->execute(array($this->id, $artist->artist->id, $artist->delimiter));
                     }
                 }
             } catch (PDOException $e) {
@@ -78,14 +81,15 @@ class Record {
                     $this->format = $result["format"];
                     $this->year = $result["year"];
                 }
-                $sql = "select a.name, ra.delimiter from record_artists ra ";
+                $sql = "select a.id, a.name, ra.delimiter from record_artists ra ";
                 $sql .= "inner join artists a on ra.artist_id = a.id ";
                 $sql .= "where record_id = ?";
                 $stmt = $this->conn->prepare($sql);
                 $stmt->execute(array($this->id));
                 while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-                    $this->artists[] = ["name" => $row["name"],
-                                        "delimiter" => $row["delimiter"]];
+                    $this->artists[$row["id"]] = [
+                        "artist" => new Artist($this->conn, ["id" => $row["id"], "name" => $row["name"]]),
+                        "delimiter" => $row["delimiter"]];
                 }
                 $stmt = $this->conn->prepare("select id, position, name from tracks where record_id = ?");
                 $stmt->execute(array($this->id));
