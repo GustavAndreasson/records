@@ -9,7 +9,7 @@ class Record {
     public $thumbnail;
     public $format;
     public $year;
-    public $added_date;
+    public $addedDate;
     public $tracks;
 
     public function __construct($conn, $record) {
@@ -21,7 +21,8 @@ class Record {
             foreach ($record->basic_information->artists as $artist) {
                 $this->artists[$artist->id] = [
                     "artist" => new Artist($this->conn, $artist),
-                    "delimiter" => $artist->join];
+                    "delimiter" => $artist->join
+                ];
             }
             $this->cover = $record->basic_information->cover_image;
             $this->thumbnail = $record->basic_information->thumb;
@@ -40,7 +41,7 @@ class Record {
                 $this->format = $record->basic_information->formats[0]->name;
             }
             $this->year = $record->basic_information->year;
-            $this->added_date = $record->date_added;
+            $this->addedDate = $record->date_added;
             try {
                 $stmt = $this->conn->prepare("select id from records where id = ?");
                 $stmt->execute(array($this->id));
@@ -56,13 +57,10 @@ class Record {
                         $this->format,
                         $this->year
                     ));
-                    foreach ($this->artists as $artist) {
-                        //$sql = "insert into artists (id, name) values (?, ?) on duplicate key update id=id";
-                        //$stmt = $conn->prepare($sql);
-                        //$stmt->execute(array($artist->id, preg_replace("/\s\([0-9]+\)/", "", $artist->name)));
+                    foreach ($this->artists as $artistId => $artist) {
                         $sql = "insert into record_artists (record_id, artist_id, delimiter) values (?, ?, ?)";
                         $stmt = $conn->prepare($sql);
-                        $stmt->execute(array($this->id, $artist->artist->id, $artist->delimiter));
+                        $stmt->execute(array($this->id, $artistId, $artist->delimiter));
                     }
                 }
             } catch (PDOException $e) {

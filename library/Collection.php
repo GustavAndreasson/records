@@ -50,7 +50,7 @@ class Collection {
                 $oldReleases[] = $row["record_id"];
             }
         } catch (PDOException $e) {
-            Util::log("Something went reading user collection: " . $e->getMessage(), true);
+            Util::log("Something went wrong reading user collection: " . $e->getMessage(), true);
         }
 
         Util::log("Storing collection updates for " . $this->discogsUsername);
@@ -60,7 +60,8 @@ class Collection {
             if (!in_array($releaseData->id, $oldReleases)) {
                 $release = new Record($this->conn, $releaseData);
                 try {
-                    $stmt = $this->conn->prepare("insert into user_records (user_id, record_id, added_date) values (?, ?, ?)");
+                    $sql = "insert into user_records (user_id, record_id, added_date) values (?, ?, ?)";
+                    $stmt = $this->conn->prepare($sql);
                     $stmt->execute(array($this->userId, $release->id, substr($releaseData->date_added, 0, 10)));
                 } catch (PDOException $e) {
                     Util::log("Something went wrong when adding record to user: " . $e->getMessage(), true);
@@ -91,7 +92,7 @@ class Collection {
             $stmt->execute(array($this->userId));
             while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
                 $release = new Record($this->conn, $row["record_id"]);
-                $release->added_date = $row["added_date"];
+                $release->addedDate = $row["added_date"];
                 $this->releases[$release->id] = $release;
             }
         } catch (PDOException $e) {
