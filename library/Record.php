@@ -25,12 +25,12 @@ class Record {
                 ];
 		}*/
 
-	    $this->cover = $record->cover_image ?= null;
-            $this->thumbnail ?: $record->thumb ?= null;
+	    $this->cover = $record->cover_image ?? null;
+            $this->thumbnail = $record->thumb ?? null;
 	    if (isset($record->formats)) {
 	        $this->setFormat($record->formats);
 	    }
-            $this->year = $record->year ?= null;
+            $this->year = $record->year ?? null;
             try {
                 $stmt = $this->conn->prepare("select id from records where id = ?");
                 $stmt->execute(array($this->id));
