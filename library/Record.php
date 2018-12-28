@@ -17,31 +17,20 @@ class Record {
         if (is_object($record)) { //record is an record object from discogs
             //TODO: Check with isset before setting attributes
             $this->id = $record->id;
-            $this->name = $record->basic_information->title;
-            foreach ($record->basic_information->artists as $artist) {
+            $this->name = $record->title;
+            /*foreach ($record->artists as $artist) {
                 $this->artists[$artist->id] = [
                     "artist" => new Artist($this->conn, $artist),
                     "delimiter" => $artist->join
                 ];
-            }
-            $this->cover = $record->basic_information->cover_image;
-            $this->thumbnail = $record->basic_information->thumb;
-            $this->format = $record->basic_information->formats[0]->name;
-            $format_descriptions = array();
-            if (isset($record->basic_information->formats[0]->descriptions)) {
-                $format_descriptions = $record->basic_information->formats[0]->descriptions;
-            }
-            if (in_array("12\"", $format_descriptions)) {
-                $this->format = "Vinyl12";
-            } else if (in_array("10\"", $format_descriptions)) {
-                $this->format = "Vinyl10";
-            } else if (in_array("7\"", $format_descriptions)) {
-                $this->format = "Vinyl7";
-            } else {
-                $this->format = $record->basic_information->formats[0]->name;
-            }
-            $this->year = $record->basic_information->year;
-            $this->addedDate = $record->date_added;
+		}*/
+
+	    $this->cover = $record->cover_image ?= null;
+            $this->thumbnail ?: $record->thumb ?= null;
+	    if (isset($record->formats)) {
+	        $this->setFormat($record->formats);
+	    }
+            $this->year = $record->year ?= null;
             try {
                 $stmt = $this->conn->prepare("select id from records where id = ?");
                 $stmt->execute(array($this->id));
@@ -57,14 +46,18 @@ class Record {
                         $this->format,
                         $this->year
                     ));
-                    foreach ($this->artists as $artistId => $artist) {
+		    if (isset($record->artists)) {
+		        $this->setArtists($record->artists);
+		    }
+                    /*foreach ($this->artists as $artistId => $artist) {
                         $sql = "insert into record_artists (record_id, artist_id, delimiter) values (?, ?, ?)";
                         $stmt = $conn->prepare($sql);
                         $stmt->execute(array($this->id, $artistId, $artist->delimiter));
-                    }
+			}*/
                 }
             } catch (PDOException $e) {
                 Util::log("Something went wrong when creating record: " . $e->getMessage(), true);
+		throw($e);
             }
         } else { //record is an id of a record in the database
             $this->id = $record;
@@ -96,13 +89,52 @@ class Record {
                 }
             } catch (PDOException $e) {
                 Util::log("Something went wrong when getting record: " . $e->getMessage(), true);
+		throw($e);
             }
         }
+    }
+
+    private function setArtists($artists) {
+        $sql = "insert into record_artists (record_id, artist_id, delimiter) values ";
+	$vals = array();
+        foreach ($artists as $artist) {
+	    $this->artists[$artist->id] = [
+		"artist" => new Artist($this->conn, $artist),
+		"delimiter" => $artist->join
+	    ];
+	    $sql .= "(?, ?, ?),";
+	    $vals[] = $this->id;
+	    $vals[] = $artist->id;
+	    $vals[] = $artist->join;
+	}
+	if ($vals) {
+	    $sql = rtrim($sql, ",");
+	    $stmt = $conn->prepare($sql);
+	    $stmt->execute($vals);
+	}
+    }
+
+    private function setFormat($formats) {
+        $this->format = $formats[0]->name;
+	$format_descriptions = array();
+	if (isset($formats[0]->descriptions)) {
+	    $format_descriptions = $formats[0]->descriptions;
+	}
+	if (in_array("12\"", $format_descriptions)) {
+	    $this->format = "Vinyl12";
+	} else if (in_array("10\"", $format_descriptions)) {
+	    $this->format = "Vinyl10";
+	} else if (in_array("7\"", $format_descriptions)) {
+	    $this->format = "Vinyl7";
+	} 
     }
 
     public function addData($releaseData, $masterData) {
         try {
             $this->conn->beginTransaction();
+	    if (!$this->artists && isset($releaseData->artists)) {) {
+	        $this->setArtists($releaseData->artists);
+	    }
             if (!$this->tracks && isset($releaseData->tracklist)) {
                 foreach ($releaseData->tracklist as $track) {
                     $this->tracks[] = new Track($this->conn, $track, $this->id);
@@ -110,17 +142,23 @@ class Record {
             }
             if (!$this->thumbnail && isset($masterData->images[0])) {
                 $this->thumbnail = $masterData->images[0]->uri150;
+            }
+            if (!$this->cover && isset($masterData->images[0])) {
                 $this->cover = $masterData->images[0]->uri;
             }
+	    if (!$this->format && isset($releaseData->formats)) {
+	        $this->setFormat($releaseData->formats);
+	    }
             if (isset($masterData->year)) {
                 $this->year = $masterData->year;
             }
             $now = date("Y-m-d");
-            $stmt = $this->conn->prepare("update records set year = ?, updated = ?, cover = ?, thumbnail = ? where id = ?");
-            $stmt->execute(array($this->year, $now, $this->cover, $this->thumbnail, $this->id));
+            $stmt = $this->conn->prepare("update records set year = ?, updated = ?, cover = ?, thumbnail = ?, format = ? where id = ?");
+            $stmt->execute(array($this->year, $now, $this->cover, $this->thumbnail, $this->format, $this->id));
             $this->conn->commit();
         } catch (PDOException $e) {
             Util::log("Something went wrong when adding record data: " . $e->getMessage(), true);
+	    throw($e);
         }
     }
 }

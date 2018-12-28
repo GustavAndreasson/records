@@ -58,7 +58,8 @@ class Collection {
         $newReleases = array();
         foreach($releasesData as $releaseData) {
             if (!in_array($releaseData->id, $oldReleases)) {
-                $release = new Record($this->conn, $releaseData);
+                $release = new Record($this->conn, $releaseData->basic_information);
+		$release->addedDate = $releaseData->date_added;
                 try {
                     $sql = "insert into user_records (user_id, record_id, added_date) values (?, ?, ?)";
                     $stmt = $this->conn->prepare($sql);
