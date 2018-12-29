@@ -15,11 +15,11 @@ class Artist {
         $this->groups = array();
         if (is_object($artist)) { // store new artist in database with data from discogs data
             $this->id = $artist->id;
-            $this->name = preg_replace("/\s\([0-9]+\)/", "", $artist->name, );
+            $this->name = preg_replace("/\s\([0-9]+\)/", "", $artist->name);
             if (isset($artist->profile)) {
                 $this->description = $artist->profile;
             }
-            if (isset($artist->images[0]) {
+            if (isset($artist->images[0])) {
                 $this->image = $artist->images[0]->resource_url;
             }
             try {
@@ -41,7 +41,7 @@ class Artist {
                             $sql = "insert into artist_members (artist_id, member_id, active) values (?, ?, ?) ";
                             $sql .= "on duplicate key update active=values(active)";
                             $stmt = $this->conn->prepare($sql);
-                            $stmt->execute(array($this->id, $member->id, $member->active));   
+                            $stmt->execute(array($this->id, $member->id, $member->active));
                         }
                     }
                     if (isset($artist->groups)) {
@@ -50,17 +50,17 @@ class Artist {
                                 "artist" => new Artist($this->conn, $group),
                                 "active" => $group->active
                             ];
-                            $sql = "insert into artist_members (artist_id, member_id, active) values (?, ?, ?) "; 
+                            $sql = "insert into artist_members (artist_id, member_id, active) values (?, ?, ?) ";
                             $sql .= "on duplicate key update active=values(active)";
                             $stmt = $this->conn->prepare($sql);
-                            $stmt->execute(array($group->id, $this->id, $group->active));   
+                            $stmt->execute(array($group->id, $this->id, $group->active));
                         }
                     }
                 }
             } catch (PDOException $e) {
                 Util::log("Something went wrong when creating artist: " . $e->getMessage(), true);
             }
-        } elseif (is_array($artist)) { // data already collected from the database 
+        } elseif (is_array($artist)) { // data already collected from the database
             $this->id = $artist["id"];
             $this->name = $artist["name"];
             if (isset($artist["description"])) {

@@ -18,18 +18,13 @@ class Record {
             //TODO: Check with isset before setting attributes
             $this->id = $record->id;
             $this->name = $record->title;
-            /*foreach ($record->artists as $artist) {
-                $this->artists[$artist->id] = [
-                    "artist" => new Artist($this->conn, $artist),
-                    "delimiter" => $artist->join
-                ];
-		}*/
 
-	    $this->cover = $record->cover_image ?? null;
+
+            $this->cover = $record->cover_image ?? null;
             $this->thumbnail = $record->thumb ?? null;
-	    if (isset($record->formats)) {
-	        $this->setFormat($record->formats);
-	    }
+            if (isset($record->formats)) {
+                $this->setFormat($record->formats);
+            }
             $this->year = $record->year ?? null;
             try {
                 $stmt = $this->conn->prepare("select id from records where id = ?");
@@ -46,18 +41,14 @@ class Record {
                         $this->format,
                         $this->year
                     ));
-		    if (isset($record->artists)) {
-		        $this->setArtists($record->artists);
-		    }
-                    /*foreach ($this->artists as $artistId => $artist) {
-                        $sql = "insert into record_artists (record_id, artist_id, delimiter) values (?, ?, ?)";
-                        $stmt = $conn->prepare($sql);
-                        $stmt->execute(array($this->id, $artistId, $artist->delimiter));
-			}*/
+                    if (isset($record->artists)) {
+                        $this->setArtists($record->artists);
+                    }
+
                 }
             } catch (PDOException $e) {
                 Util::log("Something went wrong when creating record: " . $e->getMessage(), true);
-		throw($e);
+                throw($e);
             }
         } else { //record is an id of a record in the database
             $this->id = $record;
@@ -80,7 +71,8 @@ class Record {
                 while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
                     $this->artists[$row["id"]] = [
                         "artist" => new Artist($this->conn, ["id" => $row["id"], "name" => $row["name"]]),
-                        "delimiter" => $row["delimiter"]];
+                        "delimiter" => $row["delimiter"]
+                    ];
                 }
                 $stmt = $this->conn->prepare("select id, position, name from tracks where record_id = ?");
                 $stmt->execute(array($this->id));
@@ -89,52 +81,52 @@ class Record {
                 }
             } catch (PDOException $e) {
                 Util::log("Something went wrong when getting record: " . $e->getMessage(), true);
-		throw($e);
+                throw($e);
             }
         }
     }
 
     private function setArtists($artists) {
         $sql = "insert into record_artists (record_id, artist_id, delimiter) values ";
-	$vals = array();
+        $vals = array();
         foreach ($artists as $artist) {
-	    $this->artists[$artist->id] = [
-		"artist" => new Artist($this->conn, $artist),
-		"delimiter" => $artist->join
-	    ];
-	    $sql .= "(?, ?, ?),";
-	    $vals[] = $this->id;
-	    $vals[] = $artist->id;
-	    $vals[] = $artist->join;
-	}
-	if ($vals) {
-	    $sql = rtrim($sql, ",");
-	    $stmt = $conn->prepare($sql);
-	    $stmt->execute($vals);
-	}
+            $this->artists[$artist->id] = [
+                "artist" => new Artist($this->conn, $artist),
+                "delimiter" => $artist->join
+            ];
+            $sql .= "(?, ?, ?),";
+            $vals[] = $this->id;
+            $vals[] = $artist->id;
+            $vals[] = $artist->join;
+        }
+        if ($vals) {
+            $sql = rtrim($sql, ",");
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute($vals);
+        }
     }
 
     private function setFormat($formats) {
         $this->format = $formats[0]->name;
-	$format_descriptions = array();
-	if (isset($formats[0]->descriptions)) {
-	    $format_descriptions = $formats[0]->descriptions;
-	}
-	if (in_array("12\"", $format_descriptions)) {
-	    $this->format = "Vinyl12";
-	} else if (in_array("10\"", $format_descriptions)) {
-	    $this->format = "Vinyl10";
-	} else if (in_array("7\"", $format_descriptions)) {
-	    $this->format = "Vinyl7";
-	} 
+        $format_descriptions = array();
+        if (isset($formats[0]->descriptions)) {
+            $format_descriptions = $formats[0]->descriptions;
+        }
+        if (in_array("12\"", $format_descriptions)) {
+            $this->format = "Vinyl12";
+        } else if (in_array("10\"", $format_descriptions)) {
+            $this->format = "Vinyl10";
+        } else if (in_array("7\"", $format_descriptions)) {
+            $this->format = "Vinyl7";
+        }
     }
 
     public function addData($releaseData, $masterData) {
         try {
             $this->conn->beginTransaction();
-	    if (!$this->artists && isset($releaseData->artists)) {) {
-	        $this->setArtists($releaseData->artists);
-	    }
+            if (!$this->artists && isset($releaseData->artists)) {
+                $this->setArtists($releaseData->artists);
+            }
             if (!$this->tracks && isset($releaseData->tracklist)) {
                 foreach ($releaseData->tracklist as $track) {
                     $this->tracks[] = new Track($this->conn, $track, $this->id);
@@ -146,9 +138,9 @@ class Record {
             if (!$this->cover && isset($masterData->images[0])) {
                 $this->cover = $masterData->images[0]->uri;
             }
-	    if (!$this->format && isset($releaseData->formats)) {
-	        $this->setFormat($releaseData->formats);
-	    }
+            if (!$this->format && isset($releaseData->formats)) {
+                $this->setFormat($releaseData->formats);
+            }
             if (isset($masterData->year)) {
                 $this->year = $masterData->year;
             }
@@ -158,7 +150,7 @@ class Record {
             $this->conn->commit();
         } catch (PDOException $e) {
             Util::log("Something went wrong when adding record data: " . $e->getMessage(), true);
-	    throw($e);
+            throw($e);
         }
     }
 }
