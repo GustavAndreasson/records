@@ -35,6 +35,9 @@ CREATE TABLE `user_records` (
 CREATE TABLE `artists` (
   `id` int(11) NOT NULL,
   `name` varchar(255) DEFAULT NULL,
+  `description` text DEFAULT NULL,
+  `image` varchar(255) DEFAULT NULL,
+  `updated` date DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
