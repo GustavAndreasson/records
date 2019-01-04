@@ -1,10 +1,8 @@
 <?php
-defined("LIBRARY_PATH")
-    or define("LIBRARY_PATH", dirname(__FILE__) . '/');
-defined("TEMPLATES_PATH")
-    or define("TEMPLATES_PATH", dirname(__FILE__) . '/../templates/');
-defined("LOGS_PATH")
-    or define("LOGS_PATH", dirname(__FILE__) . '/../var/logs/');
+defined("LIBRARY_PATH") or define("LIBRARY_PATH", dirname(__FILE__) . '/');
+defined("MODELS_PATH") or define("MODELS_PATH", dirname(__FILE__) . '/../models/');
+defined("TEMPLATES_PATH") or define("TEMPLATES_PATH", dirname(__FILE__) . '/../templates/');
+defined("LOGS_PATH") or define("LOGS_PATH", dirname(__FILE__) . '/../var/logs/');
 
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
@@ -19,10 +17,10 @@ defined("DB_USERNAME") or define("DB_USERNAME", "records");
 defined("DB_PASSWORD") or define("DB_PASSWORD", "recordspwd");
 defined("DB_NAME") or define("DB_NAME", "records");
 
-require_once("Util.php");
-require_once("Discogs.php");
-require_once("Artist.php");
-require_once("Track.php");
-require_once("Record.php");
-require_once("Collection.php");
-require_once("Main.php");
+require_once(LIBRARY_PATH . "Util.php");
+require_once(LIBRARY_PATH . "Discogs.php");
+require_once(LIBRARY_PATH . "Main.php");
+require_once(MODELS_PATH . "Artist.php");
+require_once(MODELS_PATH . "Track.php");
+require_once(MODELS_PATH . "Record.php");
+require_once(MODELS_PATH . "Collection.php");
