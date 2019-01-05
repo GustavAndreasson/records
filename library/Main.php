@@ -3,7 +3,7 @@
 class Main {
     public $collection;
     private $conn;
-    
+
     public function __construct() {
         try {
             $this->conn = new PDO("mysql:host=" . DB_SERVERNAME . ";dbname=" . DB_NAME, DB_USERNAME, DB_PASSWORD);
@@ -54,5 +54,9 @@ class Main {
         }
         Discogs::clearAccessLog();
         echo date("Y-m-d H:i:s") . " Done updating $counter records.\n";
+    }
+
+    public function getArtist($artist_id) {
+        return new Artist($this->conn, $artist_id);
     }
 }

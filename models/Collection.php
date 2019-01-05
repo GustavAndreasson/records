@@ -5,10 +5,10 @@ class Collection {
     private $userId;
     private $releases;
     private $conn;
-    
+
     public function __construct($conn, $user) {
         $this->conn = $conn;
-        
+
         try {
             $stmt = $this->conn->prepare("select id from users where username = ?");
             $stmt->execute(array($user));
@@ -59,7 +59,7 @@ class Collection {
         foreach($releasesData as $releaseData) {
             if (!in_array($releaseData->id, $oldReleases)) {
                 $release = new Record($this->conn, $releaseData->basic_information);
-		$release->addedDate = $releaseData->date_added;
+                $release->addedDate = $releaseData->date_added;
                 try {
                     $sql = "insert into user_records (user_id, record_id, added_date) values (?, ?, ?)";
                     $stmt = $this->conn->prepare($sql);
@@ -74,7 +74,7 @@ class Collection {
         $this->conn->commit();
 
         Util::log("Done storing collection updates for " . $this->discogsUsername);
-        
+
         return array('releases' => $newReleases, 'last' => $last);
     }
 

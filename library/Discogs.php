@@ -2,7 +2,7 @@
 
 class Discogs {
     const DISCOGS_BASE_URL = "https://api.discogs.com";
-    
+
     private static $userAgent;
     private static $key;
     private static $secret;
@@ -58,7 +58,7 @@ class Discogs {
 
     public static function getArtist($artist) {
         $uri = self::DISCOGS_BASE_URL . "/artists/" . $artist;
-        $uri .= "&key=" . self::$key . "&secret=" . self::$secret;
+        $uri .= "?key=" . self::$key . "&secret=" . self::$secret;
         return self::readUri($uri);
     }
 
@@ -74,21 +74,21 @@ class Discogs {
             $stmt = self::$conn->prepare("select count(*) as queue, min(timestamp) as firstCall from discogs_access where timestamp > ?");
             $stmt->execute(array(time() - 60));
             $response = $stmt->fetch(PDO::FETCH_ASSOC);
-            
+
             if ($response) {
                 if ($response["queue"] > self::$maxCalls - 2) {
                     Util::log("Too many discogs calls. Sleeping for " . (60 - (time() - $response["firstCall"])) . " seconds");
                     sleep(60 - (time() - $response["firstCall"]));
                 }
             }
-            
+
             $stmt = self::$conn->prepare("insert into discogs_access (timestamp) values (?)");
             $stmt->execute(array(time()));
         } catch (PDOException $e) {
             Util::log("Something went wrong when checking discogs access log: " . $e->getMessage(), true);
             die();
         }
-        
+
         $ch = curl_init($uri);
         curl_setopt_array($ch, array(
             CURLOPT_HTTPHEADER => array("User-Agent: " . self::$userAgent),
@@ -99,7 +99,7 @@ class Discogs {
         $response = curl_exec($ch);
         $header_size = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
         curl_close($ch);
-        
+
         $headers = substr($response, 0, $header_size);
         $body = substr($response, $header_size);
 
