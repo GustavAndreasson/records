@@ -8,6 +8,7 @@ class Artist {
     public $image;
     public $members;
     public $groups;
+    public $updated;
 
     public function __construct($conn, $artist) {
         $this->conn = $conn;
@@ -49,6 +50,7 @@ class Artist {
                     $this->name = $result["name"];
                     $this->description = $result["description"];
                     $this->image = $result["image"];
+                    $this->updated = $result["updated"];
                 }
                 $sql = "select a.id, a.name, am.active from artist_members am ";
                 $sql .= "inner join artists a on am.member_id = a.id ";
@@ -69,7 +71,8 @@ class Artist {
                 while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
                     $this->groups[$row["id"]] = [
                         "artist" => new Artist($this->conn, ["id" => $row["id"], "name" => $row["name"]]),
-                        "active" => $row["active"]];
+                        "active" => $row["active"]
+                    ];
                 }
             } catch (PDOException $e) {
                 Util::log("Something went wrong when getting artist: " . $e->getMessage(), true);
@@ -100,30 +103,31 @@ class Artist {
                 if (isset($artist->members)) {
                     $this->members = array();
                     foreach ($artist->members as $member) {
-                        $this->members[] = [
+                        $this->members[$member->id] = [
                             "artist" => new Artist($this->conn, $member),
                             "active" => $member->active
                         ];
                         $sql = "insert into artist_members (group_id, member_id, active) values (?, ?, ?) ";
                         $sql .= "on duplicate key update active=values(active)";
                         $stmt = $this->conn->prepare($sql);
-                        $stmt->execute(array($this->id, $member->id, $member->active));
+                        $stmt->execute(array($this->id, $member->id, (int)$member->active));
                     }
                 }
                 if (isset($artist->groups)) {
                     $this->groups = array();
                     foreach ($artist->groups as $group) {
-                        $this->groups[] = [
+                        $this->groups[$group->id] = [
                             "artist" => new Artist($this->conn, $group),
                             "active" => $group->active
                         ];
                         $sql = "insert into artist_members (group_id, member_id, active) values (?, ?, ?) ";
                         $sql .= "on duplicate key update active=values(active)";
                         $stmt = $this->conn->prepare($sql);
-                        $stmt->execute(array($group->id, $this->id, $group->active));
+                        $stmt->execute(array($group->id, $this->id, (int)$group->active));
                     }
                 }
             }
+            $this->updated = true;
         } catch (PDOException $e) {
             Util::log("Something went wrong when updating artist: " . $e->getMessage(), true);
         }

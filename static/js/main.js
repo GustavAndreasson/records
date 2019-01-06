@@ -2,11 +2,11 @@
 $(function() {
     if ($("#collection").length) {
         col = new Collection("#collection");
-        artists = new Artists("#artist_info");
+        artists = new ArtistCollection("#artist-info");
 
         col.artists = artists;
         col.loadCollection();
-    
+
         filters = new Filters("#filters", col);
         $("#search").on("input", filters.run);
         $(".add_filter").on("click", function() {
@@ -21,7 +21,7 @@ $(function() {
         orders = new Orders("#orders", col);
         $(".add_order").on("click", orders.add);
         $(document).on("click", ".remove_order", orders.remove);
-        
+
         $("#show_filters").on("click", function() {
             $(".filter_container").toggle();
         });
@@ -31,13 +31,17 @@ $(function() {
         $("#reload").on("click", function() {
             col.updateCollection();
         });
+        $("#hide-artist").on("click", artists.hideArtist);
 
         $(document).on("click", ".record", col.showRecord);
         $("#record-popup").on("click", function() {
             $(this).hide();
         });
 
-        $(document).on("click", ".artist", filters.showArtist);
+        $(document).on("click", ".artist", function () {
+            artists.showArtist($(this).data("artistId"));
+            filters.showArtist($(this).text());
+        });
         $(document).on("click", ".year", filters.showYear);
     }
 });
@@ -59,29 +63,27 @@ function Filters(div, col) {
 
     self.run = function() {
         self.col.filters[0].val = $("#search").val();
-	self.col.filter();
+        self.col.filter();
     };
 
     self.add = function(attr, cmp, val) {
         self.col.filters.push({attr: attr, cmp: cmp, val: val});
-	var html = "<div class='filter'><span>" + attr + " " + cmp + " " + val;
+        var html = "<div class='filter'><span>" + attr + " " + cmp + " " + val;
         html += "</span><button type='button' class='remove_filter'>-</button></div>";
-	$(self.div).append(html);
-	self.run();
+        $(self.div).append(html);
+        self.run();
     };
 
     self.remove = function() {
         self.col.filters.splice($(this).parent(".filter").index() + 1, 1);
-	$(this).parent(".filter").remove();
+        $(this).parent(".filter").remove();
         self.run();
     };
 
-    self.showArtist = function() {
-        var artist = $(this).text();
+    self.showArtist = function(artist) {
         clearFilters();
         self.add("artist", "eq", artist);
         self.run();
-        self.col.showArtist($(this).data("artistId"));
     }
 
     self.showYear = function() {
@@ -108,10 +110,10 @@ function Orders(div, col) {
         var attr = $(".new_order .order_attribute").val();
         var rev = $(".new_order .order_reverse")[0].checked;
         self.orders.unshift({attr: attr, dir: (rev ? -1 : 1)});
-	var html = "<div class='order'><span>" + attr + " " + (rev ? "&uarr;" : "&darr;");
+        var html = "<div class='order'><span>" + attr + " " + (rev ? "&uarr;" : "&darr;");
         html += "</span><button type='button' class='remove_order'>-</button></div>";
-	$(self.div).append(html);
-	self.run();
+        $(self.div).append(html);
+        self.run();
     };
 
     self.remove = function() {
@@ -122,7 +124,7 @@ function Orders(div, col) {
 
     return self;
 }
-	
+
 
 function Collection(div) {
     var self = this;
@@ -134,24 +136,24 @@ function Collection(div) {
         cmp:"sub",
         val:$("#search").val()
     }];
-    
+
     function addRecord(record) {
-	self.collection[record.id] = record;
+        self.collection[record.id] = record;
         $.each(record.artists, function(id, artist) {
-            self.artists.addArtist(artist);
+            self.artists.addArtist(id, artist);
         });
-	var html = "<div class='record' id='record-" + record.id + "'";
+        var html = "<div class='record' id='record-" + record.id + "'";
         if (!filterRecord(record)) {
             html += " style='display: none'";
         } else {
             self.counter += 1;
         }
-	html += "><img class='cover format-" + record.format + "' src='" + record.thumbnail;
+        html += "><img class='cover format-" + record.format + "' src='" + record.thumbnail;
         html += "' alt='" + getArtists(record.artists) + " - " + record.name;
         html += "' title='" + getArtists(record.artists) + " - " + record.name + "'>";
-	html += "</div>";
-	$(self.div).append(html);
-	return html;
+        html += "</div>";
+        $(self.div).append(html);
+        return html;
     }
 
     function filterRecord(record) {
@@ -159,10 +161,10 @@ function Collection(div) {
             "eq": function(a, b) { return a == b; },
             "neq": function(a, b) { return a != b; },
             "sub": function(a, b) { return a.toLowerCase().indexOf(b.toLowerCase()) >= 0; },
-            "lt": function(a, b) { return a <= b; }, 
+            "lt": function(a, b) { return a <= b; },
             "mt": function(a, b) { return a >= b; }
         };
-	var show = true;
+        var show = true;
         $.each(self.filters, function(j, filter) {
             if (filter.attr == "all") {
                 var test = false;
@@ -190,7 +192,7 @@ function Collection(div) {
             } else {
                 show &= comparors[filter.cmp](record[filter.attr], filter.val);
             }
-	});
+        });
         return show;
     }
 
@@ -236,8 +238,8 @@ function Collection(div) {
     };
 
     self.setCollection = function(user) {
-	$.post("controllers/collection.php",
-	       {action:"set_collection", user:user});
+        $.post("controllers/collection.php",
+        {action:"set_collection", user:user});
     };
 
     self.loadCollection = function() {
@@ -247,11 +249,11 @@ function Collection(div) {
         ).done(
             function(data) {
                 $("#status").html("");
-		var count = 0;
-		$.each(data, function(i, release) {
-		    addRecord(release);
-		    count++;
-		});
+                var count = 0;
+                $.each(data, function(i, release) {
+                    addRecord(release);
+                    count++;
+                });
                 if (count == 0) {
                     self.updateCollection();
                 }
@@ -261,99 +263,114 @@ function Collection(div) {
             $("#status").html("ERROR");
         });
     };
-    
+
     self.updateCollection = function(page) {
-	var pagesize = 100;
-	if (!page) page = 1;
-	$.getJSON(
-	    "controllers/collection.php",
-	    {action:"update_collection", page:page, page_size:pagesize}
-	).done(
-	    function(data) {
-		$("#status").html("");
+        var pagesize = 100;
+        if (!page) page = 1;
+        $.getJSON(
+            "controllers/collection.php",
+            {action:"update_collection", page:page, page_size:pagesize}
+        ).done(
+            function(data) {
+                $("#status").html("");
                 $("#loader").show();
-		var count = 0;
-		$.each(data.releases, function(i, release) {
-		    addRecord(release);
-		    count++;
-		});
+                var count = 0;
+                $.each(data.releases, function(i, release) {
+                    addRecord(release);
+                    count++;
+                });
                 $("#counter").text(self.counter);
-		if (!data.last) {
-		    self.updateCollection(page + 1);
-		} else {
+                if (!data.last) {
+                    self.updateCollection(page + 1);
+                } else {
                     $("#loader").hide();
                 }
-	    }
-	).fail(function() {
-	    $("#status").html("ERROR");
-	});
+            }
+        ).fail(function() {
+            $("#status").html("ERROR");
+        });
     };
 
     self.filter = function() {
         self.counter = 0;
         $.each(self.collection, function(i, record) {
-	    if (filterRecord(record)) {
-		$("#record-" + record.id).show();
+            if (filterRecord(record)) {
+                $("#record-" + record.id).show();
                 self.counter += 1;
-	    } else {
-		$("#record-" + record.id).hide();
-	    }
-	});
+            } else {
+                $("#record-" + record.id).hide();
+            }
+        });
         $("#counter").text(self.counter);
     };
 
     self.sort = function(orders) {
         $.each(orders, function(i, order) {
-	    $(".record").sort(function(a, b) {
-		vala = self.collection[$(a).attr("id").substr(7)][order.attr];//$(a).children("." + order.attr).text();
-		valb = self.collection[$(b).attr("id").substr(7)][order.attr];//$(b).children("." + order.attr).text();
+            $(".record").sort(function(a, b) {
+                vala = self.collection[$(a).attr("id").substr(7)][order.attr];//$(a).children("." + order.attr).text();
+                valb = self.collection[$(b).attr("id").substr(7)][order.attr];//$(b).children("." + order.attr).text();
                 if (order.attr == "artists") {
                     vala = getArtists(vala);
                     valb = getArtists(valb);
                 }
-		if (vala < valb) return -order.dir;
-		if (vala > valb) return order.dir;
-		return ($(a).index() < $(b).index() ? -1 : 1);
-	    }).appendTo($(self.div));
-	});
+                if (vala < valb) return -order.dir;
+                if (vala > valb) return order.dir;
+                return ($(a).index() < $(b).index() ? -1 : 1);
+            }).appendTo($(self.div));
+        });
     };
-    
+
     return self;
 }
 
 function ArtistCollection(div) {
     var self = this;
+    self.div = div;
     self.artists = {};
 
-    self.addArtist = function(artist) {
-        self.artists[artist.id] = artist;
+    self.addArtist = function(id, artist) {
+        self.artists[id] = artist;
     }
 
     function addArtistData(data) {
-        if (data.image) $(self.div + " img").attr("src", artist.image).show();
-        if (data.description) $(self.div + " .description").html(data.description).show();
+        console.log(data);
+        if (data.image) $(self.div + " img").attr("src", data.image).show();
+        if (data.description) $(self.div + " .description").html(data.description.replace(/\r/g, "<br />")).show();
         if (data.members) {
             $.each(data.members, function(id, member) {
                 self.artists[id] = member;
                 var memberHtml = "<div class='artist' data-artist-id='";
-                memberHtml += id + "'>" + member.name + "</div>";
+                memberHtml += id + "'>" + member.artist.name + "</div>";
                 $(self.div + " .members").append(memberHtml);
             });
             $(self.div + " .members").show();
         }
         if (data.groups) {
-            $.each(data.members, function(id, group) {
+            $.each(data.groups, function(id, group) {
                 self.artists[id] = group;
                 var groupHtml = "<div class='artist' data-artist-id='";
-                groupHtml += id + "'>" + group.name + "</div>";
+                groupHtml += id + "'>" + group.artist.name + "</div>";
                 $(self.div + " .groups").append(groupHtml);
             });
             $(self.div + " .groups").show();
         }
     }
 
+    self.clearArtist = function() {
+        $(self.div + " img").attr("src", "").hide();
+        $(self.div + " .description").html("").hide();
+        $(self.div + " .members").html("").hide();
+        $(self.div + " .groups").html("").hide();
+    }
+
+    self.hideArtist = function() {
+        self.clearArtist();
+        $(self.div).hide();
+    }
+
     self.showArtist = function(artistId) {
-        var artist = self.artists[artistsId];
+        self.clearArtist();
+        var artist = self.artists[artistId];
         $(self.div + " .name").html(artist.name);
         $(self.div).show();
         $.getJSON(
