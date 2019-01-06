@@ -2,6 +2,9 @@
 $(function() {
     if ($("#collection").length) {
         col = new Collection("#collection");
+        artists = new Artists("#artist_info");
+
+        col.artists = artists;
         col.loadCollection();
     
         filters = new Filters("#filters", col);
@@ -78,6 +81,7 @@ function Filters(div, col) {
         clearFilters();
         self.add("artist", "eq", artist);
         self.run();
+        self.col.showArtist($(this).data("artistId"));
     }
 
     self.showYear = function() {
@@ -133,6 +137,9 @@ function Collection(div) {
     
     function addRecord(record) {
 	self.collection[record.id] = record;
+        $.each(record.artists, function(id, artist) {
+            self.artists.addArtist(artist);
+        });
 	var html = "<div class='record' id='record-" + record.id + "'";
         if (!filterRecord(record)) {
             html += " style='display: none'";
@@ -190,7 +197,10 @@ function Collection(div) {
     function getArtists(artists, html) {
         var artists_str = "";
         $.each(artists, function(i, artist) {
-            if (html) artists_str += "<span class='artist'>";
+            if (html) {
+                artists_str += "<span class='artist' data-artist-id='";
+                artists_str += i + "'>";
+            }
             artists_str += artist.artist.name;
             if (html) artists_str += "</span>";
             if (artists[i+1]) {
@@ -308,5 +318,60 @@ function Collection(div) {
 	});
     };
     
+    return self;
+}
+
+function ArtistCollection(div) {
+    var self = this;
+    self.artists = {};
+
+    self.addArtist = function(artist) {
+        self.artists[artist.id] = artist;
+    }
+
+    function addArtistData(data) {
+        if (data.image) $(self.div + " img").attr("src", artist.image).show();
+        if (data.description) $(self.div + " .description").html(data.description).show();
+        if (data.members) {
+            $.each(data.members, function(id, member) {
+                self.artists[id] = member;
+                var memberHtml = "<div class='artist' data-artist-id='";
+                memberHtml += id + "'>" + member.name + "</div>";
+                $(self.div + " .members").append(memberHtml);
+            });
+            $(self.div + " .members").show();
+        }
+        if (data.groups) {
+            $.each(data.members, function(id, group) {
+                self.artists[id] = group;
+                var groupHtml = "<div class='artist' data-artist-id='";
+                groupHtml += id + "'>" + group.name + "</div>";
+                $(self.div + " .groups").append(groupHtml);
+            });
+            $(self.div + " .groups").show();
+        }
+    }
+
+    self.showArtist = function(artistId) {
+        var artist = self.artists[artistsId];
+        $(self.div + " .name").html(artist.name);
+        $(self.div).show();
+        $.getJSON(
+            "controllers/artist.php",
+            {action: "get_artist", artist: artistId}
+        ).done(function(data) {
+            if (data.updated) {
+                addArtistData(data);
+            } else {
+                $.getJSON(
+                    "controllers/artist.php",
+                    {action: "update_artist", artist: artistId}
+                ).done(function(data) {
+                    addArtistData(data);
+                });
+            }
+        });
+    }
+
     return self;
 }
