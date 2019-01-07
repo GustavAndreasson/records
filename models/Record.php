@@ -63,13 +63,15 @@ class Record {
                     $this->format = $result["format"];
                     $this->year = $result["year"];
                 }
-                $sql = "select a.id, a.name, ra.delimiter from record_artists ra ";
+                $sql = "select a.id, a.name, ra.delimiter, ra.position from record_artists ra ";
                 $sql .= "inner join artists a on ra.artist_id = a.id ";
-                $sql .= "where record_id = ?";
+                $sql .= "where record_id = ? order by ra.position asc";
                 $stmt = $this->conn->prepare($sql);
                 $stmt->execute(array($this->id));
+                $pos = 0;
                 while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-                    $this->artists[$row["id"]] = [
+                    $pos = $row["position"] ?: $pos + 1;
+                    $this->artists[$pos] = [
                         "artist" => new Artist($this->conn, ["id" => $row["id"], "name" => $row["name"]]),
                         "delimiter" => $row["delimiter"]
                     ];
@@ -87,20 +89,24 @@ class Record {
     }
 
     private function setArtists($artists) {
-        $sql = "insert into record_artists (record_id, artist_id, delimiter) values ";
+        $sql = "insert into record_artists (record_id, artist_id, delimiter, position) values ";
         $vals = array();
+        $pos = 1;
         foreach ($artists as $artist) {
-            $this->artists[$artist->id] = [
+            $this->artists[$pos] = [
                 "artist" => new Artist($this->conn, $artist),
                 "delimiter" => $artist->join
             ];
-            $sql .= "(?, ?, ?),";
+            $sql .= "(?, ?, ?, ?),";
             $vals[] = $this->id;
             $vals[] = $artist->id;
             $vals[] = $artist->join;
+            $vals[] = $pos++;
         }
         if ($vals) {
             $sql = rtrim($sql, ",");
+            $sql .= "on duplicate key update ";
+            $sql .= "delimiter=values(delimiter), position=values(position)";
             $stmt = $this->conn->prepare($sql);
             $stmt->execute($vals);
         }

@@ -140,7 +140,7 @@ function Collection(div) {
     function addRecord(record) {
         self.collection[record.id] = record;
         $.each(record.artists, function(id, artist) {
-            self.artists.addArtist(id, artist);
+            self.artists.addArtist(artist.artist);
         });
         var html = "<div class='record' id='record-" + record.id + "'";
         if (!filterRecord(record)) {
@@ -198,14 +198,16 @@ function Collection(div) {
 
     function getArtists(artists, html) {
         var artists_str = "";
+        var count = 0;
         $.each(artists, function(i, artist) {
             if (html) {
                 artists_str += "<span class='artist' data-artist-id='";
-                artists_str += i + "'>";
+                artists_str += artist.artist.id + "'>";
             }
             artists_str += artist.artist.name;
             if (html) artists_str += "</span>";
-            if (artists[i+1]) {
+            count++;
+            if (Object.keys(artists).length > count) {
                 artists_str += " " + artist.delimiter + " ";
             }
         });
@@ -328,8 +330,8 @@ function ArtistCollection(div) {
     self.div = div;
     self.artists = {};
 
-    self.addArtist = function(id, artist) {
-        self.artists[id] = artist;
+    self.addArtist = function(artist) {
+        self.artists[artist.id] = artist;
     }
 
     function addArtistData(data) {

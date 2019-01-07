@@ -19,17 +19,16 @@ class Track {
                 $stmt->execute(array($this->record_id, $this->position, $this->name));
                 $this->id = $this->conn->lastInsertId();
                 if (isset($track->artists)) {
+                    $pos = 1;
                     foreach ($track->artists as $artist) {
-                        $this->artists[$artist->id] = [
+                        $this->artists[$pos] = [
                             "artist" => new Artist($this->conn, $artist),
                             "delimiter" => $artist->join
                         ];
-                        //$sql = "insert into artists (id, name) values (?, ?) on duplicate key update id=id";
-                        //$stmt = $this->conn->prepare($sql);
-                        //$stmt->execute(array($artist->id, preg_replace("/\s\([0-9]+\)/", "", $artist->name)));
-                        $sql = "insert into track_artists (track_id, artist_id, delimiter) values (?, ?, ?)";
+                        $sql = "insert into track_artists (track_id, artist_id, delimiter, position) values (?, ?, ?, ?)";
                         $stmt = $this->conn->prepare($sql);
-                        $stmt->execute(array($this->id, $artist->id, $artist->join));
+                        $stmt->execute(array($this->id, $artist->id, $artist->join, $pos));
+                        $pos += 1;
                     }
                 }
             } catch (PDOException $e) {
@@ -40,15 +39,18 @@ class Track {
             $this->position = $track["position"];
             $this->name = $track["name"];
             try {
-                $sql = "select a.id, a.name, ta.delimiter from track_artists ta ";
+                $sql = "select a.id, a.name, ta.delimiter, ta.position from track_artists ta ";
                 $sql .= "inner join artists a on ta.artist_id = a.id ";
-                $sql .= "where ta.track_id = ?";
+                $sql .= "where ta.track_id = ? order by ta.position asc";
                 $stmt = $this->conn->prepare($sql);
                 $stmt->execute(array($this->id));
+                $pos = 0;
                 while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-                    $this->artists[$row["id"]] = [
+                    $pos = $row["position"] ?: $pos + 1;
+                    $this->artists[$pos] = [
                         "artist" => new Artist($this->conn, ["id" => $row["id"], "name" => $row["name"]]),
-                        "delimiter" => $row["delimiter"]];
+                        "delimiter" => $row["delimiter"]
+                    ];
                 }
             } catch (PDOException $e) {
                 Util::log("Something went wrong when getting track data: " . $e->getMessage(), true);

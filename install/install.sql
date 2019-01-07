@@ -52,6 +52,7 @@ CREATE TABLE `record_artists` (
   `record_id` int(11) NOT NULL,
   `artist_id` int(11) NOT NULL,
   `delimiter` varchar(255) DEFAULT NULL,
+  `position` int(11) DEFAULT NULL,
   PRIMARY KEY (`record_id`,`artist_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
@@ -67,5 +68,6 @@ CREATE TABLE `track_artists` (
   `track_id` int(11) NOT NULL,
   `artist_id` int(11) NOT NULL,
   `delimiter` varchar(255) DEFAULT NULL,
+  `position` int(11) DEFAULT NULL,
   PRIMARY KEY (`track_id`,`artist_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
